@@ -1,136 +1,139 @@
-// Source: Benq
-// O(NlogN ? ), but kinda slow
-// tested on https://codeforces.com/contest/815/problem/D -> TLE on test 15
-typedef pair<ll,ll> pll;
-typedef pair<pll,int> T;
-const ll INF = 1e18;
-template<int SZ> struct Seg { // SZ is power of TWO!!
-  int N,Q;
-  ll mxMod[2*SZ], mnMod[2*SZ], mod[2*SZ];
-  T mx[2*SZ], mn[2*SZ]; ll sum[2*SZ];
-  Seg() { init(); }
-  void init(int ind = 1, int L = 0, int R = SZ-1) {
-    mxMod[ind] = INF, mnMod[ind] = -INF, mod[ind] = 0; // OK
-    if (L == R) {
-      mx[ind] = {{0,-INF},1}; mn[ind] = {{0,INF},1}; sum[ind] = 0;
-      return;
-    } 
-    int M = (L+R)/2;
-    init(2*ind,L,M); init(2*ind+1,M+1,R);
-    pull(ind);
+/*
+ * SegBeats
+ * Suporta as querys (note a ordenação):
+ * 0: range CHMIN: ai = min(ai,x) , i em [l,r];
+ * 1: range CHMAX: ai = max(ai,x) , i em [l,r];
+ * 2: range ADD: ai = ai + x, i em [l,r]
+ * 3: range SUM: soma ai, i em [l,r] / range MX / range MN
+ * Dá pra mudar pra range XOR se tirar o ADD
+ * Complexidade: O(logN) amorizado se não usar o ADD
+ * Ou O(log^2) usando o ADD
+ * Prova da complexidade (para as querys 0/1):
+ * Toda vez que eu não paro, dois nós passam a ter o mesmo valor.
+ * Para toda query é aumentado em O(1) a quantidade de valores distintos.
+ * Então eu só não paro O((N + Q)*logN) vezes.
+ * OBS: Declarar global para nao dar stack overflow ou mudar para um vector inves de array
+ * Se quiser só "CHMAX", pode tirar o setmn e tirar a variável de max.
+ * Status:
+ * Tested on https://old.yosupo.jp/problem/range_chmin_chmax_add_range_sum
+ * Referencias: 
+ * https://github.com/brunomaletta/Biblioteca/blob/master/Codigo/Estruturas/SegTree/SegTreeBeats.cpp
+ * Benq, taken from yosupo judge
+*/
+
+typedef long long ll;
+using T = pair<pair<ll,ll>,int>;
+const ll INF = (ll)1e18; // nao usar LLONG_MAX
+#define ff first
+#define ss second
+#define mid ((i+j)/2)
+template<int SZ> struct Beats{
+  
+  struct node{
+    int tam;
+    ll sum,lazy;
+    T mx,mn;
+    T combMx(T a,T b){
+      if(a < b)swap(a,b);
+      if(a.ff.ff == b.ff.ff)
+          return {{a.ff.ff,max(a.ff.ss,b.ff.ss)},a.ss + b.ss};
+      return {{a.ff.ff,max(a.ff.ss,b.ff.ff)},a.ss};
+    }
+    T combMn(T a,T b){
+      if(a > b)swap(a,b);
+       if(a.ff.ff == b.ff.ff)
+          return {{a.ff.ff,min(a.ff.ss,b.ff.ss)},a.ss + b.ss};
+      return {{a.ff.ff,min(a.ff.ss,b.ff.ff)},a.ss};
+    }
+    node(){ // nulo
+      mx = {{-INF,-INF},0},mn={{INF,INF},0};
+      lazy=sum=0;
+      tam=0;
+    }
+    node(ll x){
+      lazy = 0;
+      sum = x;
+      mx = {{x,-INF},1};
+      mn = {{x,+INF},1};
+      tam = 1;
+    }
+    node (const node a,const node b){
+        sum = a.sum + b.sum;
+        lazy=0;
+        tam = a.tam + b.tam;
+        mx = combMx(a.mx,b.mx);
+        mn = combMn(a.mn,b.mn);
+    }
+    void setmn(ll x){
+      if(mx.ff.ff <= x)return;
+      sum-=(mx.ff.ff - x)*mx.ss;
+      if(mn.ff.ff == mx.ff.ff)mn.ff.ff = x;
+      if(mn.ff.ss == mx.ff.ff)mn.ff.ss = x;
+      mx.ff.ff=x;
+    }
+    void setmx(ll x){
+      if(mn.ff.ff >= x)return;
+      sum-=(mn.ff.ff - x)*mn.ss;
+      if(mx.ff.ff == mn.ff.ff)mx.ff.ff = x;
+      if(mx.ff.ss == mn.ff.ff)mx.ff.ss = x;
+      mn.ff.ff=x;
+    }
+    void setsum(ll x){
+      mx.ff.ff+=x,mx.ff.ss+=x;
+      mn.ff.ff+=x,mn.ff.ss+=x;
+      sum+=x*tam;
+      lazy+=x;
+    }
+  }tree[4*SZ];
+  
+  void push(int no,int i,int j){
+    if(i==j)return;
+    for(int k=0;k<2;k++){
+      if(tree[no].lazy)tree[no*2 + k].setsum(tree[no].lazy);
+      tree[no*2+k].setmx(tree[no].mn.ff.ff);
+      tree[no*2+k].setmn(tree[no].mx.ff.ff);
+    }
+    tree[no].lazy=0;
   }
-  T combMn(T a, T b) { // MIN
-    if (a > b) swap(a,b);
-    if (a.ff.ff == b.ff.ff) return {{a.ff.ff,min(a.ff.ss,b.ff.ss)},a.ss+b.ss};
-    return {{a.ff.ff,min(a.ff.ss,b.ff.ff)},a.ss};
+  
+  void upd(int no,int i,int j,int a,int b,ll x,int op){ // (1,1,n,L,R,x,tipo de query)
+    push(no,i,j);
+    if(i>b || j<a)return;
+    if(op == 0){ // mn
+      if(x>=tree[no].mx.ff.ff)return;
+    }else if(op==1){//mx
+      if(x<=tree[no].mn.ff.ff)return;
+    }
+    if(a<=i and j<=b){
+      if(op==0){
+        if(x > tree[no].mx.ff.ss){
+          tree[no].setmn(x);
+          return push(no,i,j);
+        }
+      }else if(op==1){
+        if(x < tree[no].mn.ff.ss){
+          tree[no].setmx(x);
+          return push(no,i,j); 
+        }
+      }else{
+        tree[no].setsum(x);
+        return push(no,i,j);
+      }
+    }
+    upd(2*no,i,mid,a,b,x,op),upd(2*no+1,mid+1,j,a,b,x,op);
+    tree[no] = node(tree[2*no],tree[2*no+1]);
   }
-  T combMx(T a, T b) {
-    if (a < b) swap(a,b);
-    if (a.ff.ff == b.ff.ff) return {{a.ff.ff,max(a.ff.ss,b.ff.ss)},a.ss+b.ss};
-    return {{a.ff.ff,max(a.ff.ss,b.ff.ff)},a.ss};
-  }
-  void pull(int ind) { // OK
-    sum[ind] = sum[2*ind]+sum[2*ind+1];
-    mn[ind] = combMn(mn[2*ind],mn[2*ind+1]);
-    mx[ind] = combMx(mx[2*ind],mx[2*ind+1]);
+  node query(int no,int i,int j,int a,int b){//(1,1,n,l,r)
+    push(no,i,j);
+    if(i>b || j<a)return node();
+    if(a<=i and j<=b)return tree[no];
+    return node(query(2*no,i,mid,a,b),query(2*no+1,mid+1,j,a,b));
   }
 
-  template<class T> bool ckmin(T& a, const T& b) { 
-  return b < a ? a = b, 1 : 0; }
-template<class T> bool ckmax(T& a, const T& b) { 
-  return a < b ? a = b, 1 : 0; } 
-
-  void push(int ind, int L, int R) {
-    auto chk = [](ll& a, ll b, ll c) { if (a == b) a = c; };
-    if (mnMod[ind] != -INF) {
-      if (mnMod[ind] > mn[ind].ff.ff) {
-        assert(mnMod[ind] < mn[ind].ff.ss);
-        sum[ind] += (mnMod[ind]-mn[ind].ff.ff)*mn[ind].ss;
-        chk(mx[ind].ff.ff,mn[ind].ff.ff,mnMod[ind]);
-        chk(mx[ind].ff.ss,mn[ind].ff.ff,mnMod[ind]);
-        mn[ind].ff.ff = mnMod[ind];
-        if (L != R) 
-          rep(i,0,2) {
-            int pos = 2*ind+i;
-            ckmax(mnMod[pos],mnMod[ind]-mod[pos]);
-            ckmax(mxMod[pos],mnMod[pos]);
-          }
-      }
-      mnMod[ind] = -INF;
+  node build(int no,int i,int j,vector<ll>& a){//vector 1 indexado/build(1,1,n,a)
+    if(i==j){
+      return tree[no] = node(a[i]);
     }
-    if (mxMod[ind] != INF) {
-      if (mxMod[ind] < mx[ind].ff.ff) {
-        assert(mxMod[ind] > mx[ind].ff.ss);
-        sum[ind] += (mxMod[ind]-mx[ind].ff.ff)*mx[ind].ss;
-        chk(mn[ind].ff.ff,mx[ind].ff.ff,mxMod[ind]);
-        chk(mn[ind].ff.ss,mx[ind].ff.ff,mxMod[ind]);
-        mx[ind].ff.ff = mxMod[ind];
-        if (L != R) 
-          rep(i,0,2) {
-            int pos = 2*ind+i;
-            ckmin(mxMod[pos],mxMod[ind]-mod[pos]);
-            ckmin(mnMod[pos],mxMod[pos]);
-          }
-      }
-      mxMod[ind] = INF;
-    }
-    if (mod[ind] != 0) {
-      sum[ind] += mod[ind]*(R-L+1);
-      auto inc = [](T& a, ll b) { 
-        if (abs(a.ff.ff) != INF) a.ff.ff += b;
-        if (abs(a.ff.ss) != INF) a.ff.ss += b; 
-      };
-      inc(mx[ind],mod[ind]); inc(mn[ind],mod[ind]);
-      if (L != R) 
-        rep(i,0,2) {
-          int pos = 2*ind+i;
-          mod[pos] += mod[ind];
-        }
-      mod[ind] = 0;
-    }
-  }
-  ll query(int lo, int hi, int ind = 1, int L = 0, int R = SZ-1) {
-    push(ind,L,R);
-    if (R < lo || hi < L) return 0;
-    if (lo <= L && R <= hi) {
-      //dbg("???",ind,L,R,sum[ind]);
-      return sum[ind];
-    }
-    int M = (L+R)/2;
-    return query(lo,hi,2*ind,L,M)+query(lo,hi,2*ind+1,M+1,R);
-  }
-  void upd(int lo, int hi, int t, ll b, int ind = 1, int L = 0, int R = SZ-1) {
-    push(ind,L,R);
-    if (R < lo || hi < L) return;
-    if (t == 0) {
-      if (b >= mx[ind].ff.ff) return;
-    } else if (t == 1) {
-      if (b <= mn[ind].ff.ff) return;
-    }
-    if (lo <= L && R <= hi) {
-      if (t == 0) {
-        if (b > mx[ind].ff.ss) {
-          mxMod[ind] = b; 
-          push(ind,L,R); return;
-        }
-      } else if (t == 1) {
-        if (b < mn[ind].ff.ss) {
-          mnMod[ind] = b;
-          push(ind,L,R); return;
-        }
-      } else if (t == 2) {
-        mod[ind] = b;
-        push(ind,L,R); return;
-      }
-    }
-    assert(L != R);
-    int M = (L+R)/2;
-    upd(lo,hi,t,b,2*ind,L,M); upd(lo,hi,t,b,2*ind+1,M+1,R);
-    pull(ind);
-  }
+    return tree[no] = node(build(2*no,i,mid,a),build(2*no+1,mid+1,j,a));
+  }// OBRIGATORIO CHAMAR UM BUILD!
 };
-#define CHMIN 0
-#define CHMAX 1
-#define ADD 2
-#define QUERY 3
-// t == 0  - chmin , t ==1 - chmax , t == 2 - add , t == 3 query
