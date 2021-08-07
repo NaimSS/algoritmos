@@ -1,11 +1,10 @@
 /**
  * Author: Naim
- * Source: Common knowledge(?)
  * Description: O vetor dado para inicializar deve ser 0-indice. O resto é 1-indice
  * Se comprimir fica melhor. "b" é o array com a soma de prefixos de v[i]<=mid
  * Para updates mudar o "b" em cada nó para uma BIT...
  * Time: Build O(NlogV), Querys O(logV)
- * Status: stress-tested
+ * Status: somewhat tested
  */
  
 struct Wavelet{
