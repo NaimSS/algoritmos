@@ -1,4 +1,5 @@
 // Tested on https://codeforces.com/contest/817/problem/E
+// https://codeforces.com/contest/1658/problem/D2
 const int MAXL = 30;
 struct node{
   node *l,*r;
@@ -24,7 +25,7 @@ struct node{
   int Sz(node *no){
     return !no ? 0 : no->sz;
   }
-  int cnt(int x,int L,int H = MAXL){//qtd de caras v com v^x <= L:
+  int cnt(int x,int L,int H = MAXL){//qtd de caras com xor^x <= L:
     if(!sz)return 0;
     if(H == -1){
       return sz;
@@ -40,6 +41,30 @@ struct node{
         return Sz(l) + (r ? r->cnt(x,L,H-1) : 0);
       }
       return (l ? l->cnt(x,L,H-1) : 0);
+    }
+  }
+  int mx(int x,int res=0,int H = MAXL){
+    if(H==-1){
+      return res;
+    }
+    if(x&(1<<H)){
+      if(l)return l->mx(x,res,H-1);
+      return r->mx(x,res^(1<<H),H-1);
+    }else{
+      if(r)return r->mx(x,res^(1<<H),H-1);
+      return l->mx(x,res,H-1);
+    }
+  }
+  int mn(int x,int res=0,int H = MAXL){
+    if(H==-1){
+      return res;
+    }
+    if(x&(1<<H)){
+      if(r)return r->mn(x,res^(1<<H),H-1);
+      return l->mn(x,res,H-1);
+    }else{
+      if(l)return l->mn(x,res,H-1);
+      return r->mn(x,res^(1<<H),H-1);
     }
   }
 };
