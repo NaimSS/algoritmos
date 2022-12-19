@@ -57,7 +57,7 @@ struct Cactus{
   vi acu;
 
   void dfs2(int v,int p = -1){
-    acu[v]+=(v<=n);
+    acu[v]+=(v<=n); // is a cycle
     for(int to : g[v]){
       if(to == p)continue;
       acu[to] = acu[v];
