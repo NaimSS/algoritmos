@@ -9,7 +9,7 @@ struct Seg{
 
   void flush(int no,ll i,ll j){
     if(a1[no] + an[no] == 0)return;
-    // CAREFULL WITH OVERFLOW
+    // CAREFUL WITH OVERFLOW
     tree[no]+=1ll*(a1[no] + an[no])*(j-i+1)/2;
 
      
