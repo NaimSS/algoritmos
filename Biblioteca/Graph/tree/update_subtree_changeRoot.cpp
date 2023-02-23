@@ -98,6 +98,7 @@ struct Tree{// deixa a raiz como 1 pf ;)
   bool is_ans(int a,int b){
     return tin[a]<=tin[b] and tout[a]>=tout[b];
   }
+  // update subtree of smallest tree that contains both a and b
   void update_subtree_root(int a,int b,int root,ll val){
     int Lca = lca(a,b),Lca2 = lca_root(a,b,root);
     if(!is_ans(Lca,root)){
