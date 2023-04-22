@@ -1,17 +1,17 @@
 // from viniciustht
 struct matrix{
 	int n,m;
-	vector<vector<int>> mat;
+	vector<vector<ll>> mat;
 	matrix(){}
 	matrix(int l,int c){
 		n = l;
 		m = c;
-		mat.resize(n, vector<int>(m));
+		mat.resize(n, vector<ll>(m));
 	}
 	void nsize(int l,int c){
 		n = l;
 		m = c;
-		mat.resize(n, vector<int>(m));
+		mat.resize(n, vector<ll>(m));
 	}
 };
 void print(matrix ma){
@@ -28,7 +28,7 @@ matrix operator*(const matrix& A,const matrix& B){
     matrix ret(A.n,B.m);
     for(int i=0;i<A.n;i++)
         for(int j=0;j<B.m;j++)
-            for(int k=0;k<A.m;k++){
+            for(int k=0;k<A.m;k++){ // overflow?
                 ret.mat[i][j] += (A.mat[i][k] * B.mat[k][j])%M;
                 ret.mat[i][j]%=M;
             }
