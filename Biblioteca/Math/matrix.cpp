@@ -35,7 +35,7 @@ matrix operator*(const matrix& A,const matrix& B){
     return ret;
 }
 matrix def; // def = matriz Identidade
-matrix expo(matrix a,int b){
+matrix expo(matrix a,ll b){
     if(b==0) return def;
     if(b==1){
         return a;
